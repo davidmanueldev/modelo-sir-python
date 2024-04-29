@@ -47,4 +47,5 @@ recuperados.
   * SciPy es una biblioteca de Python para matemáticas, ciencia e ingeniería. SciPy contiene módulos para optimización, álgebra lineal, integración, interpolación, funciones especiales, FFT, procesamiento de señales y de imagen, resolución de Ecuaciones Diferenciales Ordinarias (ODEs) y mucho más.
 
 
->[!important]Para ejecutar este código, necesitas tener instaladas las bibliotecas de SciPy y Matplotlib. Puedes instalarlas con pip install scipy matplotlib.
+>[!IMPORTANT]
+>Para ejecutar este código, necesitas tener instaladas las bibliotecas de SciPy y Matplotlib. Puedes instalarlas con pip install scipy matplotlib numpy.
