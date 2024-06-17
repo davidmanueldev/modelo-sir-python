@@ -1,61 +1,58 @@
-import argparse
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.animation import FuncAnimation
+from scipy.integrate import odeint
+import plotly.graph_objects as go
 
-def simulate_infection(N, alpha, beta, S0, I0, R0):
-    h = 25 / (N - 1)
-    t = [0]
-    S = [S0]
-    I = [I0]
-    R = [R0]
+# Solicitar datos al usuario
+N = float(input("Ingrese la población total, N: "))
+I0 = float(input("Ingrese el número inicial de infectados, I0: "))
+R0 = float(input("Ingrese el número inicial de recuperados, R0: "))
+beta = float(input("Ingrese la tasa de transmisión, alfa: "))
+gamma = float(input("Ingrese la tasa de recuperación, beta: "))
+dias = int(input("Ingrese la cantidad de días para la simulación: "))
 
-    for n in range(N):
-        t.append(t[n] + h)
-        S.append(S[n] - h * alpha * I[n] * S[n])
-        I.append(I[n] + h * (alpha * I[n] * S[n] - beta * I[n]))
-        R.append(R[n] + h * beta * I[n])
+# El resto de la población, S0, es susceptible a la infección inicialmente.
+S0 = N - I0 - R0
 
-    return t, S, I, R
+# Puntos en la gráfica (en días)
+t = np.linspace(0, dias, dias)
 
-def update_plot(frame, t, S, I, R, line1, line2, line3, line4):
-    line1.set_data(t[:frame], S[:frame])
-    line2.set_data(t[:frame], I[:frame])
-    line3.set_data(t[:frame], R[:frame])
-    line4.set_data(t[frame], S[frame])
-    line4.set_data(t[frame], I[frame])
-    line4.set_data(t[frame], R[frame])
-    return line1, line2, line3, line4
+# Las ecuaciones diferenciales del modelo SIR.
+def deriv(y, t, N, beta, gamma):
+    S, I, R = y
+    dSdt = -beta * S * I / N
+    dIdt = beta * S * I / N - gamma * I
+    dRdt = gamma * I
+    return dSdt, dIdt, dRdt
 
+# Vector de condiciones iniciales
+y0 = S0, I0, R0
+# Resolver el sistema de ecuaciones diferenciales, en la secuencia de días que ya definimos
+ret = odeint(deriv, y0, t, args=(N, beta, gamma))
+S, I, R = ret.T
 
-def main():
-    parser = argparse.ArgumentParser(description="Simulación de propagación de una infección")
-    parser.add_argument("--N", type=int, default=1000, help="Número de iteraciones")
-    parser.add_argument("--alpha", type=float, default=0.0014, help="Tasa de infección")
-    parser.add_argument("--beta", type=float, default=0.6, help="Tasa de recuperación")
-    parser.add_argument("--S0", type=int, default=995, help="Población suceptible inicial")
-    parser.add_argument("--I0", type=int, default=5, help="Población infectada inicial")
-    parser.add_argument("--R0", type=int, default=0, help="Población recuperada inicial")
-    args = parser.parse_args()
+# Redondear los valores
+S = np.round(S)
+I = np.round(I)
+R = np.round(R)
 
-    t, S, I, R = simulate_infection(args.N, args.alpha, args.beta, args.S0, args.I0, args.R0)
+# Crear figura para visualización
+fig = go.Figure()
 
-    fig, ax = plt.subplots()
-    line1, = ax.plot([], [], label="Suceptible")
-    line2, = ax.plot([], [], label="Infectado")
-    line3, = ax.plot([], [], label="Recuperado")
-    line4, = ax.plot([], [], 'ro', markersize=10, color='r')
-    line5, = ax.plot([], [], 'ro', markersize=10, color='r')
-    line6, = ax.plot([], [], 'ro', markersize=10, color='r')
+# Agregar trazas para susceptibles, infectados y recuperados
+fig.add_trace(go.Scatter(x=t, y=S, mode='lines', name='Susceptibles',
+                         hovertemplate='Día: %{x}<br>Susceptibles: %{y:.0f}<extra></extra>'))
+fig.add_trace(go.Scatter(x=t, y=I, mode='lines', name='Infectados',
+                         hovertemplate='Día: %{x}<br>Infectados: %{y:.0f}<extra></extra>'))
+fig.add_trace(go.Scatter(x=t, y=R, mode='lines', name='Recuperados',
+                         hovertemplate='Día: %{x}<br>Recuperados: %{y:.0f}<extra></extra>'))
 
-    ax.set_title("Propagación de una infección", fontweight="bold", size=20)
-    ax.set_xlabel("Tiempo", fontweight="bold", size=15)
-    ax.grid(True)
-    ax.legend()
+# Mejorar la presentación
+fig.update_layout(title='Evolución de la pandemia: Modelo SIR',
+                  xaxis_title='Días',
+                  yaxis_title='Número de personas',
+                  legend_title='Grupos')
 
-    anim = FuncAnimation(fig, update_plot, frames=args.N, fargs=(t, S, I, R, line1, line2, line3, line4), interval=50, blit=True)
+# Mostrar el gráfico
+fig.show()
 
-    plt.show()
-
-if __name__ == "__main__":
-    main()
+# 1000, 1,0, 0.3313, 0.0833, 120
